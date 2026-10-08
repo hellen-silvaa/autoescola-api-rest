@@ -1,0 +1,206 @@
+### Auto Escola 3ESR - colecao de requisicoes (REST Client do VS Code / HTTP Client do IntelliJ)
+@baseUrl = http://localhost:8081
+
+### 1. Login (admin/admin, criado pela migration V10). Copie o campo "tokenJWT" da resposta para @token.
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "senha": "admin"
+}
+
+###
+@token = COLE_AQUI_O_TOKEN_JWT
+
+### Health check (publico)
+GET {{baseUrl}}/health-check
+
+### ===================== INSTRUTORES =====================
+
+### Cadastrar instrutor (ADMIN)
+POST {{baseUrl}}/instrutores
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Carlos Instrutor",
+  "email": "carlos@autoescola.com",
+  "telefone": "11988887777",
+  "cnh": "01234567890",
+  "especialidade": "CARROS",
+  "endereco": {
+    "logradouro": "Rua das Flores",
+    "numero": "100",
+    "complemento": "Sala 1",
+    "bairro": "Centro",
+    "cidade": "São Paulo",
+    "uf": "SP",
+    "cep": "01001-000"
+  }
+}
+
+### Listar instrutores ativos (ADMIN, USER)
+GET {{baseUrl}}/instrutores?page=0&size=10&sort=nome
+Authorization: Bearer {{token}}
+
+### Detalhar instrutor (ADMIN)
+GET {{baseUrl}}/instrutores/1
+Authorization: Bearer {{token}}
+
+### Atualizar instrutor (ADMIN)
+PUT {{baseUrl}}/instrutores
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id": 1,
+  "telefone": "11977776666",
+  "especialidade": "MOTOS"
+}
+
+### Excluir instrutor - exclusao logica (ADMIN)
+DELETE {{baseUrl}}/instrutores/1
+Authorization: Bearer {{token}}
+
+### ===================== ALUNOS =====================
+
+### Cadastrar aluno (ADMIN)
+POST {{baseUrl}}/alunos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Ana Silva",
+  "email": "ana@email.com",
+  "telefone": "11999999999",
+  "cpf": "12345678901",
+  "endereco": {
+    "logradouro": "Rua A",
+    "numero": "10",
+    "bairro": "Centro",
+    "cidade": "São Paulo",
+    "uf": "SP",
+    "cep": "01234-567"
+  }
+}
+
+### Listar alunos ativos (ADMIN, USER)
+GET {{baseUrl}}/alunos?page=0&size=10&sort=nome
+Authorization: Bearer {{token}}
+
+### Detalhar aluno (ADMIN)
+GET {{baseUrl}}/alunos/1
+Authorization: Bearer {{token}}
+
+### Atualizar aluno - cpf nao pode ser alterado (ADMIN)
+PUT {{baseUrl}}/alunos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id": 1,
+  "nome": "Ana Silva Souza",
+  "telefone": "11911112222"
+}
+
+### Excluir aluno - exclusao logica (ADMIN)
+DELETE {{baseUrl}}/alunos/1
+Authorization: Bearer {{token}}
+
+### ===================== USUARIOS =====================
+
+### Cadastrar usuario (ADMIN). Sem "perfil", assume USER.
+POST {{baseUrl}}/usuarios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "login": "secretaria",
+  "senha": "senha123",
+  "perfil": "USER"
+}
+
+### Listar usuarios (ADMIN)
+GET {{baseUrl}}/usuarios?page=0&size=10&sort=login
+Authorization: Bearer {{token}}
+
+### Detalhar usuario (ADMIN)
+GET {{baseUrl}}/usuarios/2
+Authorization: Bearer {{token}}
+
+### Atualizar senha e/ou perfil (ADMIN)
+PUT {{baseUrl}}/usuarios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id": 2,
+  "senha": "novaSenha123",
+  "perfil": "ADMIN"
+}
+
+### Excluir usuario - exclusao fisica; nao pode excluir o proprio usuario logado (ADMIN)
+DELETE {{baseUrl}}/usuarios/2
+Authorization: Bearer {{token}}
+
+### ===================== INSTRUCOES =====================
+
+### Agendar instrucao com instrutor definido (ADMIN, USER)
+### data_hora: segunda a sabado, 06:00-20:00, hora inteira, >= 30 min de antecedencia
+POST {{baseUrl}}/instrucoes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_aluno": 1,
+  "id_instrutor": 1,
+  "data_hora": "19/10/2026 - 10:00"
+}
+
+### Agendar instrucao sem instrutor: especialidade obrigatoria, instrutor escolhido aleatoriamente (RN-A8)
+POST {{baseUrl}}/instrucoes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_aluno": 1,
+  "especialidade": "CARROS",
+  "data_hora": "20/10/2026 - 14:00"
+}
+
+### Listar instrucoes (todas)
+GET {{baseUrl}}/instrucoes?page=0&size=10
+Authorization: Bearer {{token}}
+
+### Listar apenas instrucoes nao canceladas
+GET {{baseUrl}}/instrucoes?ativas=true
+Authorization: Bearer {{token}}
+
+### Detalhar instrucao (status e motivo de cancelamento)
+GET {{baseUrl}}/instrucoes/1
+Authorization: Bearer {{token}}
+
+### Cancelar instrucao (>= 24 h de antecedencia). motivo: ALUNO_DESISTIU | INSTRUTOR_CANCELOU | OUTROS
+DELETE {{baseUrl}}/instrucoes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_instrucao": 1,
+  "motivo": "ALUNO_DESISTIU"
+}
+
+### ===================== ENDERECOS (ViaCEP) =====================
+
+### Consultar CEP (ADMIN, USER)
+GET {{baseUrl}}/enderecos/01001-000
+Authorization: Bearer {{token}}
+
+### CEP com formato invalido -> 400
+GET {{baseUrl}}/enderecos/123
+Authorization: Bearer {{token}}
+
+### CEP inexistente -> 404
+GET {{baseUrl}}/enderecos/99999-999
+Authorization: Bearer {{token}}

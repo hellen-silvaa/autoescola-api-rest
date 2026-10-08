@@ -1,0 +1,1418 @@
+openapi: 3.1.0
+info:
+  title: Auto Escola 3ESR
+  description: |
+    API REST para gerenciamento de instruções da auto escola 3ESR.
+
+    **Integrantes**
+    - Alexia Ramalho — RM 558385
+    - Enzo Real — RM 557943
+    - Gustavo Pasquini — RM 555454
+    - Hellen Silva — RM 559008
+    - Lorenzo Acquesta — RM 557397
+  contact:
+    name: Auto Escola 3ESR
+    email: autoescola3esr@email.com.br
+  license:
+    name: Apache 2.0
+    url: http://springdoc.org
+  version: "1.0"
+servers:
+- url: http://localhost:8081
+  description: Generated server url
+tags:
+- name: Instruções
+  description: "Agendamento, consulta e cancelamento de instruções"
+- name: Instrutores
+  description: CRUD de instrutores da auto escola
+- name: Health Check
+  description: Verificação de disponibilidade da API
+- name: Endereços
+  description: Consulta de endereços por CEP via WebService externo ViaCEP
+- name: Alunos
+  description: CRUD de alunos da auto escola
+- name: Autenticação
+  description: Login e emissão de token JWT
+- name: Usuários
+  description: CRUD de usuários da API (somente ADMIN)
+paths:
+  /usuarios:
+    get:
+      tags:
+      - Usuários
+      summary: Listar usuários
+      description: "Lista paginada, ordenada por login."
+      operationId: listarUsuarios
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 10
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          default:
+          - "login,ASC"
+          items:
+            type: string
+      responses:
+        "200":
+          description: Página de usuários
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDadosListagemUsuario"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDadosListagemUsuario"
+      security:
+      - bearer-key: []
+    put:
+      tags:
+      - Usuários
+      summary: Atualizar usuário
+      description: Atualiza a senha (gravada em hash) e/ou o perfil.
+      operationId: atualizarUsuario
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DadosAtualizacaoUsuario"
+        required: true
+      responses:
+        "200":
+          description: Usuário atualizado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoUsuario"
+        "400":
+          description: Dados inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoUsuario"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoUsuario"
+        "404":
+          description: Usuário não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoUsuario"
+      security:
+      - bearer-key: []
+    post:
+      tags:
+      - Usuários
+      summary: Cadastrar usuário
+      description: "Cria o usuário com a senha gravada em hash BCrypt. Se o perfil\
+        \ não for informado, usa USER."
+      operationId: cadastrarUsuario
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DadosCadastroUsuario"
+        required: true
+      responses:
+        "201":
+          description: Usuário cadastrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoUsuario"
+        "400":
+          description: Dados inválidos ou login já cadastrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoUsuario"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoUsuario"
+      security:
+      - bearer-key: []
+  /instrutores:
+    get:
+      tags:
+      - Instrutores
+      summary: Listar instrutores ativos (paginado)
+      operationId: listarInstrutores
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 10
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          default:
+          - "nome,ASC"
+          items:
+            type: string
+      responses:
+        "200":
+          description: Página de instrutores
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDadosListagemInstrutor"
+        "401":
+          description: Token ausente ou inválido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDadosListagemInstrutor"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDadosListagemInstrutor"
+      security:
+      - bearer-key: []
+    put:
+      tags:
+      - Instrutores
+      summary: Atualizar instrutor
+      operationId: atualizarInstrutor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DadosAtualizacaoInstrutor"
+        required: true
+      responses:
+        "200":
+          description: Instrutor atualizado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+        "400":
+          description: Dados inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+        "401":
+          description: Token ausente ou inválido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+        "404":
+          description: Instrutor não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+      security:
+      - bearer-key: []
+    post:
+      tags:
+      - Instrutores
+      summary: Cadastrar instrutor
+      operationId: cadastrarInstrutor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DadosCadastroInstrutor"
+        required: true
+      responses:
+        "201":
+          description: Instrutor cadastrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+        "400":
+          description: Dados inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+        "401":
+          description: Token ausente ou inválido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+      security:
+      - bearer-key: []
+  /alunos:
+    get:
+      tags:
+      - Alunos
+      summary: Listar alunos ativos (paginado)
+      operationId: listarAlunos
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 10
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          default:
+          - "nome,ASC"
+          items:
+            type: string
+      responses:
+        "200":
+          description: Página de alunos ativos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDadosListagemAluno"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDadosListagemAluno"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDadosListagemAluno"
+      security:
+      - bearer-key: []
+    put:
+      tags:
+      - Alunos
+      summary: "Atualizar aluno (nome, email, telefone e endereço)"
+      operationId: atualizarAluno
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DadosAtualizacaoAluno"
+        required: true
+      responses:
+        "200":
+          description: Aluno atualizado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+        "400":
+          description: Dados inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+        "404":
+          description: Aluno não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+      security:
+      - bearer-key: []
+    post:
+      tags:
+      - Alunos
+      summary: Cadastrar aluno
+      operationId: cadastrarAluno
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DadosCadastroAluno"
+        required: true
+      responses:
+        "201":
+          description: Aluno cadastrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+        "400":
+          description: Dados inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+      security:
+      - bearer-key: []
+  /login:
+    post:
+      tags:
+      - Autenticação
+      summary: Efetuar login e obter token JWT
+      operationId: efetuarLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DadosLogin"
+        required: true
+      responses:
+        "200":
+          description: Token JWT gerado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosTokenJWT"
+        "400":
+          description: Dados inválidos
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosTokenJWT"
+        "401":
+          description: Credenciais inválidas
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosTokenJWT"
+  /instrucoes:
+    get:
+      tags:
+      - Instruções
+      summary: Listar instruções
+      description: "Lista paginada ordenada por data/hora. Com ativas=true, traz só\
+        \ as não canceladas."
+      operationId: listarInstrucoes
+      parameters:
+      - name: ativas
+        in: query
+        description: "Quando true, retorna apenas instruções não canceladas"
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 10
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          default:
+          - "dataHora,ASC"
+          items:
+            type: string
+      responses:
+        "200":
+          description: Página de instruções
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDadosListagemInstrucao"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDadosListagemInstrucao"
+      security:
+      - bearer-key: []
+    post:
+      tags:
+      - Instruções
+      summary: Agendar instrução
+      description: "Aplica as regras RN-A1 a RN-A8. Sem id_instrutor, a especialidade\
+        \ é obrigatória e o instrutor é escolhido aleatoriamente."
+      operationId: agendarInstrucao
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DadosAgendamento"
+        required: true
+      responses:
+        "200":
+          description: Instrução agendada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAgendamento"
+        "400":
+          description: Dados inválidos ou regra de negócio violada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAgendamento"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAgendamento"
+        "404":
+          description: Aluno ou instrutor não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAgendamento"
+      security:
+      - bearer-key: []
+    delete:
+      tags:
+      - Instruções
+      summary: Cancelar instrução
+      description: Aplica as regras RN-C1 a RN-C4.
+      operationId: cancelarInstrucao
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DadosCancelamento"
+        required: true
+      responses:
+        "204":
+          description: Instrução cancelada
+        "400":
+          description: Dados inválidos ou regra de negócio violada
+        "403":
+          description: Sem permissão
+        "404":
+          description: Instrução não encontrada
+      security:
+      - bearer-key: []
+  /usuarios/{id}:
+    get:
+      tags:
+      - Usuários
+      summary: Detalhar usuário
+      operationId: detalharUsuario
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Usuário encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoUsuario"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoUsuario"
+        "404":
+          description: Usuário não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoUsuario"
+      security:
+      - bearer-key: []
+    delete:
+      tags:
+      - Usuários
+      summary: Excluir usuário
+      description: Exclusão física. Não é permitido excluir o próprio usuário logado.
+      operationId: excluirUsuario
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: Usuário excluído
+        "400":
+          description: Tentativa de excluir o próprio usuário logado
+        "403":
+          description: Sem permissão
+        "404":
+          description: Usuário não encontrado
+      security:
+      - bearer-key: []
+  /instrutores/{id}:
+    get:
+      tags:
+      - Instrutores
+      summary: Detalhar instrutor
+      operationId: detalharInstrutor
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Instrutor encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+        "401":
+          description: Token ausente ou inválido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+        "404":
+          description: Instrutor não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrutor"
+      security:
+      - bearer-key: []
+    delete:
+      tags:
+      - Instrutores
+      summary: Excluir instrutor (exclusão lógica)
+      operationId: excluirInstrutor
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: Instrutor excluído
+        "401":
+          description: Token ausente ou inválido
+        "403":
+          description: Sem permissão
+        "404":
+          description: Instrutor não encontrado
+      security:
+      - bearer-key: []
+  /instrucoes/{id}:
+    get:
+      tags:
+      - Instruções
+      summary: Detalhar instrução
+      description: Inclui o status (AGENDADA ou CANCELADA) e o motivo de cancelamento.
+      operationId: detalharInstrucao
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Instrução encontrada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrucao"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrucao"
+        "404":
+          description: Instrução não encontrada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoInstrucao"
+      security:
+      - bearer-key: []
+  /health-check:
+    get:
+      tags:
+      - Health Check
+      summary: Verificar se a API está no ar
+      operationId: healthCheck
+      responses:
+        "200":
+          description: API disponível
+          content:
+            '*/*':
+              schema:
+                type: string
+  /enderecos/{cep}:
+    get:
+      tags:
+      - Endereços
+      summary: Consultar endereço por CEP
+      description: "Consulta o endereço no ViaCEP. Aceita o CEP com ou sem hífen (ex.:\
+        \ 01001-000 ou 01001000)."
+      operationId: consultar
+      parameters:
+      - name: cep
+        in: path
+        description: "CEP com 8 dígitos, com ou sem hífen"
+        required: true
+        schema:
+          type: string
+        example: 01001-000
+      responses:
+        "200":
+          description: Endereço encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosEndereco"
+        "400":
+          description: CEP em formato inválido
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosEndereco"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosEndereco"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosEndereco"
+        "404":
+          description: CEP não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosEndereco"
+        "503":
+          description: Serviço de CEP indisponível
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosEndereco"
+      security:
+      - bearer-key: []
+  /alunos/{id}:
+    get:
+      tags:
+      - Alunos
+      summary: Detalhar aluno
+      operationId: detalharAluno
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Aluno encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+        "401":
+          description: Não autenticado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+        "403":
+          description: Sem permissão
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+        "404":
+          description: Aluno não encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DadosDetalhamentoAluno"
+      security:
+      - bearer-key: []
+    delete:
+      tags:
+      - Alunos
+      summary: Excluir aluno (exclusão lógica)
+      operationId: excluirAluno
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: Aluno excluído
+        "401":
+          description: Não autenticado
+        "403":
+          description: Sem permissão
+        "404":
+          description: Aluno não encontrado
+      security:
+      - bearer-key: []
+components:
+  schemas:
+    DadosAtualizacaoUsuario:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        senha:
+          type: string
+          maxLength: 2147483647
+          minLength: 6
+        perfil:
+          type: string
+          enum:
+          - USER
+          - ADMIN
+      required:
+      - id
+    DadosDetalhamentoUsuario:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        login:
+          type: string
+        perfil:
+          type: string
+          enum:
+          - USER
+          - ADMIN
+    DadosAtualizacaoInstrutor:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        especialidade:
+          type: string
+          enum:
+          - MOTOS
+          - CARROS
+          - VANS
+          - CAMINHOES
+        endereco:
+          $ref: "#/components/schemas/DadosEndereco"
+      required:
+      - id
+    DadosEndereco:
+      type: object
+      properties:
+        logradouro:
+          type: string
+          minLength: 1
+        numero:
+          type: string
+        complemento:
+          type: string
+        bairro:
+          type: string
+          minLength: 1
+        cidade:
+          type: string
+          minLength: 1
+        uf:
+          type: string
+          minLength: 1
+          pattern: "[A-Z]{2}"
+        cep:
+          type: string
+          minLength: 1
+          pattern: "[0-9]{5}-[0-9]{3}"
+      required:
+      - bairro
+      - cep
+      - cidade
+      - logradouro
+      - uf
+    DadosDetalhamentoInstrutor:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        cnh:
+          type: string
+        especialidade:
+          type: string
+          enum:
+          - MOTOS
+          - CARROS
+          - VANS
+          - CAMINHOES
+        endereco:
+          $ref: "#/components/schemas/DadosEndereco"
+        ativo:
+          type: boolean
+    DadosAtualizacaoAluno:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+          format: email
+        telefone:
+          type: string
+        endereco:
+          $ref: "#/components/schemas/DadosEndereco"
+      required:
+      - id
+    DadosDetalhamentoAluno:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        cpf:
+          type: string
+        endereco:
+          $ref: "#/components/schemas/DadosEndereco"
+        ativo:
+          type: boolean
+    DadosCadastroUsuario:
+      type: object
+      properties:
+        login:
+          type: string
+          minLength: 1
+        senha:
+          type: string
+          maxLength: 2147483647
+          minLength: 6
+        perfil:
+          type: string
+          enum:
+          - USER
+          - ADMIN
+      required:
+      - login
+      - senha
+    DadosLogin:
+      type: object
+      properties:
+        login:
+          type: string
+          minLength: 1
+        senha:
+          type: string
+          minLength: 1
+      required:
+      - login
+      - senha
+    DadosTokenJWT:
+      type: object
+      properties:
+        tokenJWT:
+          type: string
+    DadosCadastroInstrutor:
+      type: object
+      properties:
+        nome:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          minLength: 1
+        telefone:
+          type: string
+        cnh:
+          type: string
+          minLength: 1
+          pattern: "\\d{9,11}"
+        especialidade:
+          type: string
+          enum:
+          - MOTOS
+          - CARROS
+          - VANS
+          - CAMINHOES
+        endereco:
+          $ref: "#/components/schemas/DadosEndereco"
+      required:
+      - cnh
+      - email
+      - especialidade
+      - nome
+      - telefone
+    DadosAgendamento:
+      type: object
+      properties:
+        id_aluno:
+          type: integer
+          format: int64
+        id_instrutor:
+          type: integer
+          format: int64
+        especialidade:
+          type: string
+          enum:
+          - MOTOS
+          - CARROS
+          - VANS
+          - CAMINHOES
+        data_hora:
+          type: string
+          format: date-time
+      required:
+      - data_hora
+      - id_aluno
+    DadosDetalhamentoAgendamento:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome_aluno:
+          type: string
+        nome_instrutor:
+          type: string
+        especialidade:
+          type: string
+          enum:
+          - MOTOS
+          - CARROS
+          - VANS
+          - CAMINHOES
+        data_hora:
+          type: string
+          format: date-time
+    DadosCadastroAluno:
+      type: object
+      properties:
+        nome:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          minLength: 1
+        telefone:
+          type: string
+          minLength: 1
+        cpf:
+          type: string
+          minLength: 1
+          pattern: "\\d{11}"
+        endereco:
+          $ref: "#/components/schemas/DadosEndereco"
+      required:
+      - cpf
+      - email
+      - endereco
+      - nome
+      - telefone
+    DadosListagemUsuario:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        login:
+          type: string
+        perfil:
+          type: string
+          enum:
+          - USER
+          - ADMIN
+    PageDadosListagemUsuario:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/DadosListagemUsuario"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        paged:
+          type: boolean
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        unpaged:
+          type: boolean
+    SortObject:
+      type: object
+      properties:
+        empty:
+          type: boolean
+        sorted:
+          type: boolean
+        unsorted:
+          type: boolean
+    DadosListagemInstrutor:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+        especialidade:
+          type: string
+          enum:
+          - MOTOS
+          - CARROS
+          - VANS
+          - CAMINHOES
+    PageDadosListagemInstrutor:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/DadosListagemInstrutor"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    DadosListagemInstrucao:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome_aluno:
+          type: string
+        nome_instrutor:
+          type: string
+        data_hora:
+          type: string
+          format: date-time
+        status:
+          type: string
+    PageDadosListagemInstrucao:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/DadosListagemInstrucao"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    DadosDetalhamentoInstrucao:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        id_aluno:
+          type: integer
+          format: int64
+        nome_aluno:
+          type: string
+        id_instrutor:
+          type: integer
+          format: int64
+        nome_instrutor:
+          type: string
+        especialidade:
+          type: string
+          enum:
+          - MOTOS
+          - CARROS
+          - VANS
+          - CAMINHOES
+        data_hora:
+          type: string
+          format: date-time
+        status:
+          type: string
+        motivo_cancelamento:
+          type: string
+          enum:
+          - ALUNO_DESISTIU
+          - INSTRUTOR_CANCELOU
+          - OUTROS
+    DadosListagemAluno:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+        cpf:
+          type: string
+    PageDadosListagemAluno:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/DadosListagemAluno"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    DadosCancelamento:
+      type: object
+      properties:
+        id_instrucao:
+          type: integer
+          format: int64
+        motivo:
+          type: string
+          enum:
+          - ALUNO_DESISTIU
+          - INSTRUTOR_CANCELOU
+          - OUTROS
+      required:
+      - id_instrucao
+      - motivo
+  securitySchemes:
+    bearer-key:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
